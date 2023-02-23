@@ -8,24 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Data.SqlClient;
+using Microsoft.SqlServer.Server;
 
 namespace NewTestWindowsFormTwo
 {
-    public enum EnumUserPasswordStatus // !!!
-    { 
-        outdated,  // устарел
-        relevant   // актуален
-    }
-
-    public enum EnumUserRole // !!!
-    { 
-        administrator, // Администратор
-        editor,        // Редактор
-        user           // Пользователь
-    }
-
-
     public struct UserData
     {
         // Ячейки такие:
@@ -33,10 +20,10 @@ namespace NewTestWindowsFormTwo
         public string UserID;
         public string UserLogin;
         public string UserName;
-        public EnumUserPasswordStatus UserPasswordStatus;
-        public EnumUserRole UserRole;
+        public string UserPasswordStatus;
+        public string UserRole;
 
-        public UserData(string ID, string Login, string Name, EnumUserPasswordStatus PasswordStatus, EnumUserRole Role)
+        public UserData(string ID, string Login, string Name, string PasswordStatus, string Role)
         {
             UserID = ID;
             UserLogin = Login;
@@ -55,25 +42,36 @@ namespace NewTestWindowsFormTwo
 
     public partial class Form1 : Form
     {
+        DataBase database = new DataBase();
+
         public Form1() //Main
         {
             InitializeComponent();
-            // startNewTable(); ?
+            SetNewUserDataSQL(dataGridView1);
+
+        }
 
 
-            string[] DataUserName = { "Вологодский Н.И.", "Кораблев В.И.",
-            "Волков Р.А.", "Стержнев В.С.", "Августин A.A." };
+        private void ReadSingleRow(DataGridView dgw, IDataRecord record)
+        {
+            dgw.Rows.Add(record.GetInt32(0), record.GetString(1), record.GetString(2), record.GetString(3), record.GetString(4));
+        }
 
-            UserData[] ListTest = new UserData[5];
+        private void SetNewUserDataSQL(DataGridView dgw)
+        {
+            dgw.Rows.Clear();
 
-            for (int i = 0; i < 5; i++) 
+            string queryString = $"select * from test_table";
+            SqlCommand command = new SqlCommand(queryString, database.getConnection());
+            database.openConnection();
+
+            SqlDataReader reader = command.ExecuteReader();
+
+            while(reader.Read())
             {
-                ListTest[i] = new UserData("00" + (i + 1).ToString(), DataUserName[i], DataUserName[i], EnumUserPasswordStatus.relevant, EnumUserRole.administrator); // создали структуру
-
-                SetNewUserData(ListTest[i]); // на табличку
-                ListTest[i].PrintUserData(); //вывод в консоль
+                ReadSingleRow(dgw, reader);
             }
-
+            reader.Close();
         }
 
         public void SetNewUserData(UserData NewRows)
